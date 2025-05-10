@@ -10,6 +10,7 @@ let gameState = 'start'; // start, playing, transition, gameover
 let transitionTimer = 0;
 let topScores = [];
 let maxTopScores = 5;
+let isPaused = false; // Variable para gestionar el estado de pausa
 
 // Configuraciones de niveles
 const LEVELS = {
@@ -76,7 +77,11 @@ function draw() {
   if (gameState === 'start') {
     drawStartScreen();
   } else if (gameState === 'playing') {
-    playGame();
+    if (!isPaused) {
+      playGame();
+    } else {
+      drawPauseScreen();
+    }
   } else if (gameState === 'transition') {
     drawTransition();
   } else if (gameState === 'gameover') {
@@ -187,6 +192,14 @@ function playGame() {
   }
 }
 
+function drawPauseScreen() {
+  fill(255, 0, 0);
+  textSize(32);
+  text('¡PAUSADO!', width / 2, height / 2 - 20);
+  textSize(18);
+  text('Presiona P para reanudar', width / 2, height / 2 + 20);
+}
+
 function drawTransition() {
   fill(255);
   textSize(28);
@@ -235,12 +248,20 @@ function keyPressed() {
     if (key === ' ') {
       player.shoot();
     }
+    if (key === 'p' || key === 'P') {
+      togglePause(); // Activar o desactivar pausa
+    }
   } else if (gameState === 'gameover' && keyCode === ENTER) {
     level = 1;
     score = 0;
     lives = 3;
     startLevel();
   }
+}
+
+// Función para pausar y reanudar el juego
+function togglePause() {
+  isPaused = !isPaused;
 }
 
 // Perder vida y reiniciar si queda
@@ -301,105 +322,86 @@ class Player {
   }
 
   shoot() {
-    // Limitar a 1 proyectil activo para simplicidad
-    if (playerProjectiles.length < 1) {
-      playerProjectiles.push(new Projectile(this.x, this.y - this.size / 2, -18, 10, 8));
+    if (this.canShoot) {
+      playerProjectiles.push(new Projectile(this.x, this.y - this.size / 2, 0, -10, 10));
+      this.canShoot = false;
     }
+  }
+
+  reset() {
+    this.x = width / 2;
+    this.y = height - 40;
   }
 }
 
 class Enemy {
-  constructor(x, y, health, speed, movementType, canShoot, isBoss = false) {
+  constructor(x, y, health, speed, movement, canShoot, isBoss = false) {
     this.x = x;
     this.y = y;
+    this.size = 30;
     this.health = health;
-    this.maxHealth = health;
     this.speed = speed;
-    this.movementType = movementType;
+    this.movement = movement;
     this.canShoot = canShoot;
-    this.size = isBoss ? 60 : 30;
     this.isBoss = isBoss;
-    this.dir = 1; // para zigzag o movimientos
-    this.step = 0; // para movimientos complejos
+    this.maxHealth = health;
   }
 
   update() {
-    switch (this.movementType) {
-      case 'straight':
-        this.y += this.speed * 0.5;
-        break;
-      case 'zigzag':
-        this.y += this.speed * 0.7;
-        this.x += this.dir * this.speed;
-        if (this.x < this.size / 2 || this.x > width - this.size / 2) {
-          this.dir *= -1;
-        }
-        break;
-      case 'complex':
-        this.step++;
-        this.y += this.speed;
-        this.x += sin(this.step * 0.1) * this.speed * 2;
-        break;
-      case 'boss':
-        this.step++;
-        this.x += sin(this.step * 0.05) * this.speed * 3;
-        if (this.x < this.size / 2) this.x = this.size / 2;
-        if (this.x > width - this.size / 2) this.x = width - this.size / 2;
-        break;
+    if (this.movement === 'straight') {
+      this.y += this.speed;
+    } else if (this.movement === 'zigzag') {
+      this.x += sin(frameCount * 0.1) * this.speed;
+      this.y += this.speed;
+    } else if (this.movement === 'complex') {
+      this.x += sin(frameCount * 0.05) * this.speed;
+      this.y += this.speed * 0.5;
+    } else if (this.movement === 'boss') {
+      this.x = width / 2 + sin(frameCount * 0.05) * 200;
+      this.y += this.speed;
     }
   }
 
   show() {
-    if (this.isBoss) fill(255, 0, 0);
-    else if (this.maxHealth > 1) fill(255, 165, 0);
-    else fill(255);
+    fill(255, 0, 0);
     noStroke();
-    ellipse(this.x, this.y, this.size);
-    // Barra de vida
-    if (this.maxHealth > 1) {
-      fill(255, 0, 0);
-      let w = map(this.health, 0, this.maxHealth, 0, this.size);
-      rect(this.x - this.size / 2, this.y + this.size / 2 + 5, w, 5);
-    }
-  }
-
-  hits(projectile) {
-    let d = dist(this.x, this.y, projectile.x, projectile.y);
-    return d < this.size / 2 + projectile.size / 2;
+    rect(this.x - this.size / 2, this.y - this.size / 2, this.size, this.size);
   }
 
   collidesWithPlayer(player) {
-    let d = dist(this.x, this.y, player.x, player.y);
-    return d < (this.size / 2 + player.size / 2);
+    return dist(this.x, this.y, player.x, player.y) < this.size / 2 + player.size / 2;
+  }
+
+  hits(projectile) {
+    return dist(this.x, this.y, projectile.x, projectile.y) < this.size / 2 + projectile.size / 2;
   }
 }
 
 class Projectile {
-  constructor(x, y, speedY, width, size) {
+  constructor(x, y, dx, dy, size) {
     this.x = x;
     this.y = y;
-    this.speedY = speedY;
-    this.width = width;
+    this.dx = dx;
+    this.dy = dy;
     this.size = size;
   }
 
   update() {
-    this.y += this.speedY;
+    this.x += this.dx;
+    this.y += this.dy;
   }
 
   show() {
     fill(255, 255, 0);
     noStroke();
-    rectMode(CENTER);
-    rect(this.x, this.y, this.size / 3, this.size);
+    ellipse(this.x, this.y, this.size);
   }
 
   offscreen() {
-    return this.y < 0 || this.y > height;
+    return this.x < 0 || this.x > width || this.y < 0 || this.y > height;
   }
 
   hitsPlayer(player) {
-    let d = dist(this.x, this.y, player.x, player.y);
-    return d < player.size / 2 + this.size / 2;
+    return dist(this.x, this.y, player.x, player.y) < this.size / 2 + player.size / 2;
   }
 }
