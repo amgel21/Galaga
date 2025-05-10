@@ -298,7 +298,9 @@ class Player {
     this.y = height - 40;
     this.size = 40;
     this.speed = 5;
-    this.canShoot = true;
+    this.shooting = false;
+    this.lastShotTime = 0;
+    this.shootCooldown = 200; // Tiempo entre disparos en milisegundos
   }
 
   update() {
@@ -309,6 +311,11 @@ class Player {
       this.x += this.speed;
     }
     this.x = constrain(this.x, this.size / 2, width - this.size / 2);
+
+    // Disparo continuo
+    if (keyIsDown(32) && millis() - this.lastShotTime > this.shootCooldown) {
+      this.shoot();
+    }
   }
 
   show() {
@@ -322,10 +329,8 @@ class Player {
   }
 
   shoot() {
-    if (this.canShoot) {
-      playerProjectiles.push(new Projectile(this.x, this.y - this.size / 2, 0, -10, 10));
-      this.canShoot = false;
-    }
+    playerProjectiles.push(new Projectile(this.x, this.y - this.size / 2, 0, -10, 10));
+    this.lastShotTime = millis();
   }
 
   reset() {
@@ -334,49 +339,7 @@ class Player {
   }
 }
 
-class Enemy {
-  constructor(x, y, health, speed, movement, canShoot, isBoss = false) {
-    this.x = x;
-    this.y = y;
-    this.size = 30;
-    this.health = health;
-    this.speed = speed;
-    this.movement = movement;
-    this.canShoot = canShoot;
-    this.isBoss = isBoss;
-    this.maxHealth = health;
-  }
-
-  update() {
-    if (this.movement === 'straight') {
-      this.y += this.speed;
-    } else if (this.movement === 'zigzag') {
-      this.x += sin(frameCount * 0.1) * this.speed;
-      this.y += this.speed;
-    } else if (this.movement === 'complex') {
-      this.x += sin(frameCount * 0.05) * this.speed;
-      this.y += this.speed * 0.5;
-    } else if (this.movement === 'boss') {
-      this.x = width / 2 + sin(frameCount * 0.05) * 200;
-      this.y += this.speed;
-    }
-  }
-
-  show() {
-    fill(255, 0, 0);
-    noStroke();
-    rect(this.x - this.size / 2, this.y - this.size / 2, this.size, this.size);
-  }
-
-  collidesWithPlayer(player) {
-    return dist(this.x, this.y, player.x, player.y) < this.size / 2 + player.size / 2;
-  }
-
-  hits(projectile) {
-    return dist(this.x, this.y, projectile.x, projectile.y) < this.size / 2 + projectile.size / 2;
-  }
-}
-
+// --- Proyectil ---
 class Projectile {
   constructor(x, y, dx, dy, size) {
     this.x = x;
@@ -392,16 +355,66 @@ class Projectile {
   }
 
   show() {
-    fill(255, 255, 0);
+    fill(255);
     noStroke();
     ellipse(this.x, this.y, this.size);
   }
 
   offscreen() {
-    return this.x < 0 || this.x > width || this.y < 0 || this.y > height;
+    return this.y < 0 || this.y > height || this.x < 0 || this.x > width;
+  }
+
+  hits(player) {
+    let d = dist(this.x, this.y, player.x, player.y);
+    return d < this.size / 2 + player.size / 2;
   }
 
   hitsPlayer(player) {
-    return dist(this.x, this.y, player.x, player.y) < this.size / 2 + player.size / 2;
+    let d = dist(this.x, this.y, player.x, player.y);
+    return d < this.size / 2 + player.size / 2;
   }
 }
+
+// --- Enemigos ---
+class Enemy {
+  constructor(x, y, health, speed, movementPattern, canShoot = false, isBoss = false) {
+    this.x = x;
+    this.y = y;
+    this.size = 30;
+    this.health = health;
+    this.maxHealth = health;
+    this.speed = speed;
+    this.movementPattern = movementPattern;
+    this.canShoot = canShoot;
+    this.isBoss = isBoss;
+  }
+
+  update() {
+    if (this.movementPattern === 'straight') {
+      this.y += this.speed;
+    } else if (this.movementPattern === 'zigzag') {
+      this.y += this.speed;
+      this.x += sin(frameCount * 0.1) * 2;
+    } else if (this.movementPattern === 'complex') {
+      this.y += this.speed;
+      this.x += sin(frameCount * 0.1) * 4;
+    }
+  }
+
+  show() {
+    fill(255, 0, 0);
+    noStroke();
+    ellipse(this.x, this.y, this.size);
+  }
+
+  collidesWithPlayer(player) {
+    let d = dist(this.x, this.y, player.x, player.y);
+    return d < this.size / 2 + player.size / 2;
+  }
+
+  hits(projectile) {
+    let d = dist(this.x, this.y, projectile.x, projectile.y);
+    return d < this.size / 2 + projectile.size / 2;
+  }
+}
+
