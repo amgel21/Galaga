@@ -6,13 +6,16 @@ let enemies = [];
 let level = 1;
 let score = 0;
 let lives = 3;
-let gameState = 'start'; // start, playing, transition, gameover
+let gameState = 'start';
 let transitionTimer = 0;
 let topScores = [];
 let maxTopScores = 5;
-let isPaused = false; // Variable para gestionar el estado de pausa
+let isPaused = false;
 
-// Configuraciones de niveles
+let playerImage;
+let projectileImage;
+let EnemyImage;
+
 const LEVELS = {
   1: {
     enemyCount: 10,
@@ -40,37 +43,47 @@ const LEVELS = {
   }
 };
 
+function preload() {
+  playerImage = loadImage('AVION.jpg');
+  projectileImage = loadImage('balas.png');
+  EnemyImage = loadImage('ENEMIGO.jpg');
+}
+
 function setup() {
   createCanvas(600, 600);
   textAlign(CENTER, CENTER);
   player = new Player();
   loadTopScores();
 }
-
+////////////////////////////////////////////////////////////////////////////
 function startLevel() {
   enemies = [];
   playerProjectiles = [];
   enemyProjectiles = [];
   let config = LEVELS[level];
-  // Crear enemigos normales
-  for (let i = 0; i < config.enemyCount - config.resistantCount - (config.boss ? 1 : 0); i++) {
+  let totalNonBoss = config.enemyCount - config.resistantCount - (config.boss ? 1 : 0);
+
+  for (let i = 0; i < totalNonBoss; i++) {
     let x = 40 + (i % 10) * 50;
     let y = 50 + floor(i / 10) * 40;
     enemies.push(new Enemy(x, y, 1, config.enemySpeed, config.enemyMovement, config.enemiesShoot));
   }
-  // Enemigos resistentes
+
   for (let i = 0; i < config.resistantCount; i++) {
-    let x = 40 + ((config.enemyCount - config.resistantCount - (config.boss ? 1 : 0) + i) % 10) * 50;
-    let y = 50 + floor((config.enemyCount - config.resistantCount - (config.boss ? 1 : 0) + i) / 10) * 40;
+    let index = totalNonBoss + i;
+    let x = 40 + (index % 10) * 50;
+    let y = 50 + floor(index / 10) * 40;
     enemies.push(new Enemy(x, y, 3, config.enemySpeed, config.enemyMovement, config.enemiesShoot));
   }
-  // Jefe final
+
   if (config.boss) {
     enemies.push(new Enemy(width / 2, 80, 7, config.enemySpeed * 1.5, 'boss', true, true));
   }
+
   gameState = 'playing';
 }
 
+////////////////////////////////////////////////////////////////////////////
 function draw() {
   background(0);
 
@@ -107,7 +120,6 @@ function playGame() {
   player.update();
   player.show();
 
-  // Actualizar y mostrar proyectiles del jugador
   for (let i = playerProjectiles.length - 1; i >= 0; i--) {
     let p = playerProjectiles[i];
     p.update();
@@ -115,48 +127,34 @@ function playGame() {
     if (p.offscreen()) playerProjectiles.splice(i, 1);
   }
 
-  // Actualizar y mostrar enemigos
   for (let i = enemies.length - 1; i >= 0; i--) {
     let e = enemies[i];
     e.update();
     e.show();
 
-    // Enemigos disparan aleatoriamente si pueden
     if (e.canShoot && random(1) < 0.005 * LEVELS[level].enemySpeed) {
       enemyProjectiles.push(new Projectile(e.x, e.y + 15, 5, 10, 5));
     }
 
-    // Verificar colisión con proyectiles del jugador
     for (let j = playerProjectiles.length - 1; j >= 0; j--) {
       let p = playerProjectiles[j];
       if (e.hits(p)) {
         e.health--;
         playerProjectiles.splice(j, 1);
         if (e.health <= 0) {
-          // Sumar puntos según tipo
-          if (e.isBoss) score += 10;
-          else if (e.maxHealth > 1) score += 3;
-          else score += 1;
+          score += e.isBoss ? 10 : e.maxHealth > 1 ? 3 : 1;
           enemies.splice(i, 1);
         }
         break;
       }
     }
 
-    // Verificar si enemigo llegó al fondo
-    if (e.y + e.size / 2 >= height) {
-      loseLife();
-      enemies.splice(i, 1);
-    }
-
-    // Verificar colisión con jugador
-    if (e.collidesWithPlayer(player)) {
+    if (e.y + e.size / 2 >= height || e.collidesWithPlayer(player)) {
       loseLife();
       enemies.splice(i, 1);
     }
   }
 
-  // Actualizar y mostrar proyectiles enemigos
   for (let i = enemyProjectiles.length - 1; i >= 0; i--) {
     let p = enemyProjectiles[i];
     p.update();
@@ -171,13 +169,11 @@ function playGame() {
     }
   }
 
-  // Mostrar HUD
   drawHUD();
 
-  // Verificar si nivel terminado
   if (enemies.length === 0) {
     if (level === 3) {
-      gameState = 'gameover'; // Ganó el juego
+      gameState = 'gameover';
       saveScore();
     } else {
       gameState = 'transition';
@@ -185,7 +181,6 @@ function playGame() {
     }
   }
 
-  // Verificar si perdió todas las vidas
   if (lives <= 0) {
     gameState = 'gameover';
     saveScore();
@@ -212,13 +207,10 @@ function drawTransition() {
 }
 
 function drawGameOver() {
+  textAlign(CENTER, CENTER);
   fill(255, 0, 0);
   textSize(36);
-  if (lives <= 0) {
-    text('Juego Terminado', width / 2, height / 3);
-  } else {
-    text('¡Felicidades! Ganaste', width / 2, height / 3);
-  }
+  text(lives <= 0 ? 'Juego Terminado' : '¡Felicidades! Ganaste', width / 2, height / 3);
   textSize(20);
   text(`Puntaje final: ${score}`, width / 2, height / 2);
   text('Presiona ENTER para reiniciar', width / 2, height / 2 + 50);
@@ -236,61 +228,36 @@ function drawHUD() {
   text(`Vidas: ${lives}`, 10, 30);
   text(`Nivel: ${level}`, 10, 50);
 }
-
-// Manejo de teclado
+////////////////////////////////////////////////////////////////////////////
 function keyPressed() {
-  if (gameState === 'start' && keyCode === ENTER) {
-    level = 1;
-    score = 0;
-    lives = 3;
-    startLevel();
-  } else if (gameState === 'playing') {
-    if (key === ' ') {
-      player.shoot();
+  if (keyCode === ENTER) {
+    if (gameState === 'start') {
+      level = 1;  // Reiniciar nivel al 1 en la pantalla de inicio
+      score = 0;
+      lives = 3;
+      startLevel();
+    } else if (gameState === 'gameover') {
+      level = 1;  // Reiniciar nivel al 1 cuando termina el juego
+      score = 0;
+      lives = 3;
+      player = new Player();
+      loadTopScores();
+      gameState = 'start';  // Volver al inicio
+    } else if (gameState === 'transition') {
+      // Si estamos en una transición entre niveles, se mantiene el nivel actual
+      gameState = 'playing';  // Continuar jugando
     }
-    if (key === 'p' || key === 'P') {
-      togglePause(); // Activar o desactivar pausa
+  } else if (key === ' ' && gameState === 'playing') {
+    player.shoot();
+  } else if (key === 'p' || key === 'P') {
+    if (gameState === 'playing') {
+      isPaused = !isPaused;
     }
-  } else if (gameState === 'gameover' && keyCode === ENTER) {
-    level = 1;
-    score = 0;
-    lives = 3;
-    startLevel();
   }
 }
 
-// Función para pausar y reanudar el juego
-function togglePause() {
-  isPaused = !isPaused;
-}
-
-// Perder vida y reiniciar si queda
-function loseLife() {
-  lives--;
-  // Opcional: resetear posición del jugador o algún efecto
-}
-
-// Cargar top scores de localStorage
-function loadTopScores() {
-  let scores = localStorage.getItem('topScores');
-  if (scores) {
-    topScores = JSON.parse(scores);
-  } else {
-    topScores = [];
-  }
-}
-
-// Guardar puntaje en top scores
-function saveScore() {
-  topScores.push(score);
-  topScores.sort((a, b) => b - a);
-  if (topScores.length > maxTopScores) {
-    topScores.length = maxTopScores;
-  }
-  localStorage.setItem('topScores', JSON.stringify(topScores));
-}
-
-// --- Clases ---
+////////////////////////////////////////////////////////////////////////////
+// Clases
 
 class Player {
   constructor() {
@@ -298,123 +265,115 @@ class Player {
     this.y = height - 40;
     this.size = 40;
     this.speed = 5;
-    this.shooting = false;
-    this.lastShotTime = 0;
-    this.shootCooldown = 200; // Tiempo entre disparos en milisegundos
   }
 
   update() {
-    if (keyIsDown(LEFT_ARROW)) {
-      this.x -= this.speed;
-    }
-    if (keyIsDown(RIGHT_ARROW)) {
-      this.x += this.speed;
-    }
+    if (keyIsDown(LEFT_ARROW)) this.x -= this.speed;
+    if (keyIsDown(RIGHT_ARROW)) this.x += this.speed;
     this.x = constrain(this.x, this.size / 2, width - this.size / 2);
-
-    // Disparo continuo
-    if (keyIsDown(32) && millis() - this.lastShotTime > this.shootCooldown) {
-      this.shoot();
-    }
   }
 
   show() {
-    fill(0, 255, 255);
-    noStroke();
-    // Triángulo como nave
-    push();
-    translate(this.x, this.y);
-    triangle(-this.size / 2, this.size / 2, this.size / 2, this.size / 2, 0, -this.size / 2);
-    pop();
+    imageMode(CENTER);
+    image(playerImage, this.x, this.y, this.size, this.size);
   }
 
   shoot() {
-    playerProjectiles.push(new Projectile(this.x, this.y - this.size / 2, 0, -10, 10));
-    this.lastShotTime = millis();
-  }
-
-  reset() {
-    this.x = width / 2;
-    this.y = height - 40;
+    playerProjectiles.push(new Projectile(this.x, this.y - 20, 5, 10, -7));
   }
 }
 
-// --- Proyectil ---
 class Projectile {
-  constructor(x, y, dx, dy, size) {
+  constructor(x, y, w, h, speed) {
     this.x = x;
     this.y = y;
-    this.dx = dx;
-    this.dy = dy;
-    this.size = size;
+    this.w = w;
+    this.h = h;
+    this.speed = speed;
   }
 
   update() {
-    this.x += this.dx;
-    this.y += this.dy;
+    this.y += this.speed;
   }
 
   show() {
-    fill(255);
-    noStroke();
-    ellipse(this.x, this.y, this.size);
+    imageMode(CENTER);
+    image(projectileImage, this.x, this.y, this.w * 3, this.h * 3);
   }
 
   offscreen() {
-    return this.y < 0 || this.y > height || this.x < 0 || this.x > width;
-  }
-
-  hits(player) {
-    let d = dist(this.x, this.y, player.x, player.y);
-    return d < this.size / 2 + player.size / 2;
+    return this.y < 0 || this.y > height;
   }
 
   hitsPlayer(player) {
-    let d = dist(this.x, this.y, player.x, player.y);
-    return d < this.size / 2 + player.size / 2;
+    return collideRectCircle(player.x - player.size / 2, player.y - player.size / 2, player.size, player.size, this.x, this.y, this.w);
   }
 }
 
-// --- Enemigos ---
 class Enemy {
-  constructor(x, y, health, speed, movementPattern, canShoot = false, isBoss = false) {
+  constructor(x, y, health = 1, speed = 1, movement = 'straight', canShoot = false, isBoss = false) {
     this.x = x;
     this.y = y;
-    this.size = 30;
     this.health = health;
     this.maxHealth = health;
+    this.size = isBoss ? 60 : 30;
     this.speed = speed;
-    this.movementPattern = movementPattern;
+    this.movement = movement;
     this.canShoot = canShoot;
     this.isBoss = isBoss;
+    this.phase = 0;
   }
 
   update() {
-    if (this.movementPattern === 'straight') {
+    if (this.movement === 'straight') {
       this.y += this.speed;
-    } else if (this.movementPattern === 'zigzag') {
+    } else if (this.movement === 'zigzag') {
       this.y += this.speed;
       this.x += sin(frameCount * 0.1) * 2;
-    } else if (this.movementPattern === 'complex') {
-      this.y += this.speed;
-      this.x += sin(frameCount * 0.1) * 4;
+    } else if (this.movement === 'complex' || this.movement === 'boss') {
+      this.phase += 0.05;
+      this.y += this.speed * 0.5;
+      this.x += sin(this.phase) * 3;
     }
   }
 
   show() {
-    fill(255, 0, 0);
-    noStroke();
-    ellipse(this.x, this.y, this.size);
-  }
-
-  collidesWithPlayer(player) {
-    let d = dist(this.x, this.y, player.x, player.y);
-    return d < this.size / 2 + player.size / 2;
+    imageMode(CENTER);
+    image(EnemyImage, this.x, this.y, this.size, this.size);
   }
 
   hits(projectile) {
-    let d = dist(this.x, this.y, projectile.x, projectile.y);
-    return d < this.size / 2 + projectile.size / 2;
+    return dist(this.x, this.y, projectile.x, projectile.y) < this.size / 2;
+  }
+
+  collidesWithPlayer(player) {
+    return dist(this.x, this.y, player.x, player.y) < (this.size + player.size) / 2;
+  }
+}
+function loadTopScores() {
+  let storedScores = getItem('topScores');
+  if (Array.isArray(storedScores)) {
+    topScores = storedScores;
+  } else {
+    topScores = [];
+  }
+}
+
+
+function saveScore() {
+  topScores.push(score);
+  topScores.sort((a, b) => b - a);
+  if (topScores.length > maxTopScores) {
+    topScores.length = maxTopScores;
+  }
+  storeItem('topScores', topScores);
+}
+
+function loseLife() {
+  lives--;
+  if (lives <= 0) {
+    gameOver = true;
+    saveScore();
   }
 }
 
