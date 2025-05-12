@@ -108,7 +108,7 @@ function drawStartScreen() {
   fill(255);
   textSize(32);
   imageMode(CENTER);
-  image(galagaImage, width / 2, height / 4, 200, 100); 
+  image(galagaImage, width / 2, height / 7, 200, 100); 
   textSize(18);
   text('Usa flechas izquierda/derecha para mover', width / 2, height / 3);
   text('Barra espaciadora para disparar', width / 2, height / 3 + 30);
@@ -191,6 +191,7 @@ function playGame() {
 }
 
 function drawPauseScreen() {
+   textAlign(CENTER, CENTER);
   fill(255, 0, 0);
   textSize(32);
   text('¡PAUSADO!', width / 2, height / 2 - 20);
@@ -199,6 +200,7 @@ function drawPauseScreen() {
 }
 
 function drawTransition() {
+   textAlign(CENTER, CENTER);
   fill(255);
   textSize(28);
   text(`Nivel ${level} completado!`, width / 2, height / 2);
