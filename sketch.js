@@ -15,6 +15,7 @@ let isPaused = false;
 let playerImage;
 let projectileImage;
 let EnemyImage;
+let galagaImage;
 
 const LEVELS = {
   1: {
@@ -47,6 +48,7 @@ function preload() {
   playerImage = loadImage('AVION.jpg');
   projectileImage = loadImage('balas.png');
   EnemyImage = loadImage('ENEMIGO.jpg');
+  galagaImage = loadImage('galaga.jpg');
 }
 
 function setup() {
@@ -105,7 +107,8 @@ function draw() {
 function drawStartScreen() {
   fill(255);
   textSize(32);
-  text('Juego de Nave Espacial', width / 2, height / 4);
+  imageMode(CENTER);
+  image(galagaImage, width / 2, height / 4, 200, 100); 
   textSize(18);
   text('Usa flechas izquierda/derecha para mover', width / 2, height / 3);
   text('Barra espaciadora para disparar', width / 2, height / 3 + 30);
@@ -376,4 +379,3 @@ function loseLife() {
     saveScore();
   }
 }
-
