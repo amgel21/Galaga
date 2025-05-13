@@ -28,7 +28,7 @@ const LEVELS = {
   },
   2: {
     enemyCount: 15,
-    enemySpeed: 1.5,
+    enemySpeed: 0.5,
     enemyMovement: 'zigzag',
     enemiesShoot: true,
     resistantCount: 1,
@@ -36,7 +36,7 @@ const LEVELS = {
   },
   3: {
     enemyCount: 20,
-    enemySpeed: 2,
+    enemySpeed: 0.5,
     enemyMovement: 'complex',
     enemiesShoot: true,
     resistantCount: 2,
@@ -45,10 +45,10 @@ const LEVELS = {
 };
 
 function preload() {
-  playerImage = loadImage('AVION.jpg');
+  playerImage = loadImage('AVION.png');
   projectileImage = loadImage('balas.png');
-  EnemyImage = loadImage('ENEMIGO.jpg');
-  galagaImage = loadImage('galaga.jpg');
+  EnemyImage = loadImage('ENEMIGO.png');
+  galagaImage = loadImage('galaga.png');
 }
 
 function setup() {
