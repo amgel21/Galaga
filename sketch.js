@@ -11,37 +11,17 @@ let transitionTimer = 0;
 let topScores = [];
 let maxTopScores = 5;
 let isPaused = false;
-
 let playerImage;
 let projectileImage;
 let EnemyImage;
 let galagaImage;
 
 const LEVELS = {
-  1: {
-    enemyCount: 10,
-    enemySpeed: 1,
-    enemyMovement: 'straight',
-    enemiesShoot: false,
-    resistantCount: 0,
-    boss: false,
-  },
-  2: {
-    enemyCount: 15,
-    enemySpeed: 0.5,
-    enemyMovement: 'zigzag',
-    enemiesShoot: true,
-    resistantCount: 1,
-    boss: false,
-  },
-  3: {
-    enemyCount: 20,
-    enemySpeed: 0.5,
-    enemyMovement: 'complex',
-    enemiesShoot: true,
-    resistantCount: 2,
-    boss: true,
-  }
+  1: { enemyCount: 10, enemySpeed: 1, enemyMovement: 'straight', enemiesShoot: false, resistantCount: 0, boss: false },
+  
+  2: { enemyCount: 15, enemySpeed: 0.5, enemyMovement: 'zigzag', enemiesShoot: true, resistantCount: 1, boss: false },
+  
+  3: { enemyCount: 20, enemySpeed: 0.5, enemyMovement: 'complex', enemiesShoot: true, resistantCount: 2, boss: true }
 };
 
 function preload() {
@@ -57,7 +37,7 @@ function setup() {
   player = new Player();
   loadTopScores();
 }
-////////////////////////////////////////////////////////////////////////////
+
 function startLevel() {
   enemies = [];
   playerProjectiles = [];
@@ -85,7 +65,6 @@ function startLevel() {
   gameState = 'playing';
 }
 
-////////////////////////////////////////////////////////////////////////////
 function draw() {
   background(0);
 
@@ -105,17 +84,26 @@ function draw() {
 }
 
 function drawStartScreen() {
-  fill(255);
-  textSize(32);
+  background(0);
   imageMode(CENTER);
-  image(galagaImage, width / 2, height / 7, 200, 100); 
+  image(galagaImage, width / 2, height / 6, 250, 100);
+
+  fill(255);
+  textSize(28);
+  text("🚀 GALAGA SHOOTER", width / 2, height / 4 + 30);
+
+  fill(200);
+  textSize(16);
+  text("Usa ← → para moverte", width / 2, height / 2 - 40);
+  text("Barra espaciadora para disparar", width / 2, height / 2 - 15);
+  text("Presiona ENTER para comenzar", width / 2, height / 2 + 10);
+
   textSize(18);
-  text('Usa flechas izquierda/derecha para mover', width / 2, height / 3);
-  text('Barra espaciadora para disparar', width / 2, height / 3 + 30);
-  text('Presiona ENTER para comenzar', width / 2, height / 2);
-  text('Top 5 Puntuaciones:', width / 2, height / 2 + 80);
+  fill(255, 204, 0);
+  text("🏆 Top 5 Puntuaciones:", width / 2, height / 2 + 70);
+  fill(255);
   for (let i = 0; i < topScores.length; i++) {
-    text(`${i + 1}. ${topScores[i]}`, width / 2, height / 2 + 110 + i * 25);
+    text(`${i + 1}. ${topScores[i]}`, width / 2, height / 2 + 100 + i * 25);
   }
 }
 
@@ -191,16 +179,18 @@ function playGame() {
 }
 
 function drawPauseScreen() {
-   textAlign(CENTER, CENTER);
-  fill(255, 0, 0);
-  textSize(32);
-  text('¡PAUSADO!', width / 2, height / 2 - 20);
+  fill(0, 0, 0, 180);
+  rect(0, 0, width, height);
+  textAlign(CENTER, CENTER);
+  fill(255);
+  textSize(36);
+  text(' PAUSADO', width / 2, height / 2 - 20);
   textSize(18);
-  text('Presiona P para reanudar', width / 2, height / 2 + 20);
+  text('Presiona P para continuar', width / 2, height / 2 + 20);
 }
 
 function drawTransition() {
-   textAlign(CENTER, CENTER);
+  textAlign(CENTER, CENTER);
   fill(255);
   textSize(28);
   text(`Nivel ${level} completado!`, width / 2, height / 2);
@@ -212,45 +202,59 @@ function drawTransition() {
 }
 
 function drawGameOver() {
+  background(0);
+  fill(255);
+  rectMode(CENTER);
+  rect(width / 2, height / 2, 400, 300, 20);
+
+  fill(0);
   textAlign(CENTER, CENTER);
-  fill(255, 0, 0);
-  textSize(36);
-  text(lives <= 0 ? 'Juego Terminado' : '¡Felicidades! Ganaste', width / 2, height / 3);
+  textSize(28);
+  text(lives <= 0 ? '💀 Juego Terminado' : '🎉 ¡Ganaste!', width / 2, height / 2 - 90);
+  
   textSize(20);
-  text(`Puntaje final: ${score}`, width / 2, height / 2);
-  text('Presiona ENTER para reiniciar', width / 2, height / 2 + 50);
-  text('Top 5 Puntuaciones:', width / 2, height / 2 + 100);
+  text(`⭐ Puntaje final: ${score}`, width / 2, height / 2 - 40);
+  text('Presiona ENTER para reiniciar', width / 2, height / 2);
+
+  textSize(18);
+  fill(80);
+  text('🏆 Top 5 Puntuaciones:', width / 2, height / 2 + 50);
+  fill(0);
   for (let i = 0; i < topScores.length; i++) {
-    text(`${i + 1}. ${topScores[i]}`, width / 2, height / 2 + 130 + i * 25);
+    text(`${i + 1}. ${topScores[i]}`, width / 2, height / 2 + 80 + i * 25);
   }
 }
 
+// HUD MEJORADO
 function drawHUD() {
+  noStroke();
+  fill(0, 0, 0, 150);
+  rect(5, 5, 150, 60, 10);
+
   fill(255);
-  textSize(16);
   textAlign(LEFT, TOP);
-  text(`Puntaje: ${score}`, 10, 10);
-  text(`Vidas: ${lives}`, 10, 30);
-  text(`Nivel: ${level}`, 10, 50);
+  textSize(14);
+  text(`⭐ Puntaje: ${score}`, 15, 10);
+  text(`❤️ Vidas: ${lives}`, 15, 25);
+  text(`📶 Nivel: ${level}`, 15, 40);
 }
-////////////////////////////////////////////////////////////////////////////
+
 function keyPressed() {
   if (keyCode === ENTER) {
     if (gameState === 'start') {
-      level = 1;  // Reiniciar nivel al 1 en la pantalla de inicio
+      level = 1;
       score = 0;
       lives = 3;
       startLevel();
     } else if (gameState === 'gameover') {
-      level = 1;  // Reiniciar nivel al 1 cuando termina el juego
+      level = 1;
       score = 0;
       lives = 3;
       player = new Player();
       loadTopScores();
-      gameState = 'start';  // Volver al inicio
+      gameState = 'start';
     } else if (gameState === 'transition') {
-      // Si estamos en una transición entre niveles, se mantiene el nivel actual
-      gameState = 'playing';  // Continuar jugando
+      gameState = 'playing';
     }
   } else if (key === ' ' && gameState === 'playing') {
     player.shoot();
@@ -260,6 +264,7 @@ function keyPressed() {
     }
   }
 }
+
 
 ////////////////////////////////////////////////////////////////////////////
 // Clases
