@@ -4,8 +4,8 @@ let player;
 let playerProjectiles = [];
 let enemyProjectiles = [];
 let enemies = [];
-let particles = [];       //explosiones
-let stars = [];          // fondo animado
+let particles = [];       
+let stars = [];          
 let level = 1;
 let score = 0;
 let lives = 3;
@@ -74,12 +74,11 @@ function startLevel() {
   gameState = 'playing';
 }
 
-//  DRAW LOOP
 function draw() {
-  // Fondo negro
+  
   background(0);
 
-  // 🌟 Dibujar y actualizar estrellas
+  //  Dibujar y actualizar estrellas
   for (let star of stars) {
     fill(255);
     noStroke();
@@ -91,7 +90,6 @@ function draw() {
     }
   }
 
-  // Cambiar según estado del juego
   if (gameState === 'start') {
     drawStartScreen();
   } else if (gameState === 'playing') {
@@ -160,7 +158,7 @@ function playGame() {
         e.health--;
         playerProjectiles.splice(j, 1);
 
-        // 💥 Generar partículas cuando muere
+        //  partículas cuando muere
         if (e.health <= 0) {
           score += e.isBoss ? 10 : e.maxHealth > 1 ? 3 : 1;
           enemies.splice(i, 1);
@@ -181,7 +179,7 @@ function playGame() {
       }
     }
 
-    // Colisión enemigo-jugador o borde inferior
+    // Colisión enemigo-jugador 
     if (e.y + e.size / 2 >= height || e.collidesWithPlayer(player)) {
       loseLife();
       enemies.splice(i, 1);
@@ -203,7 +201,7 @@ function playGame() {
     }
   }
 
-  // ✨ Mostrar partículas de explosión
+  //  partículas de explosión
   for (let i = particles.length - 1; i >= 0; i--) {
     let prt = particles[i];
     fill(255, 150, 0, map(prt.life, 0, 30, 0, 255));
@@ -215,7 +213,7 @@ function playGame() {
     if (prt.life <= 0) particles.splice(i, 1);
   }
 
-  // HUD
+  
   drawHUD();
 
   // Condición de nivel completado / fin de juego
@@ -285,7 +283,7 @@ function drawGameOver() {
   }
 }
 
-//  HUD 
+
 function drawHUD() {
   noStroke();
   fill(0, 0, 0, 150);
@@ -355,7 +353,7 @@ class Projectile {
     push();
     translate(this.x, this.y);
 
-    // ✨ brillo alrededor del proyectil
+    
     for (let i = 0; i < 3; i++) {
       fill(255, 255, 0, 100 - i * 30);
       ellipse(0, 0, this.w * 3 + i * 4, this.h * 3 + i * 4);
@@ -413,7 +411,7 @@ class Enemy {
   collidesWithPlayer(player) { return dist(this.x, this.y, player.x, player.y) < (this.size + player.size) / 2; }
 }
 
-//  SCORE LOCALSTORAGE 
+ 
 function loadTopScores() {
   let storedScores = getItem('topScores');
   topScores = Array.isArray(storedScores) ? storedScores : [];
