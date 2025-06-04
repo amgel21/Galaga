@@ -1,11 +1,10 @@
 
-//  VARIABLES GLOBALES 
 let player;
 let playerProjectiles = [];
 let enemyProjectiles = [];
 let enemies = [];
-let particles = [];       
-let stars = [];          
+let particles = [];
+let stars = [];
 let level = 1;
 let score = 0;
 let lives = 3;
@@ -18,36 +17,45 @@ let playerImage;
 let projectileImage;
 let EnemyImage;
 let galagaImage;
+let introMusic;
+let introMusicPlayed = false;
+let shootSound;
+
+
+
 
 const LEVELS = {
-  1: { enemyCount: 10, enemySpeed: 1,   enemyMovement: 'straight', enemiesShoot: false, resistantCount: 0, boss: false },
-  2: { enemyCount: 15, enemySpeed: 0.5, enemyMovement: 'zigzag',   enemiesShoot: true,  resistantCount: 1, boss: false },
-  3: { enemyCount: 20, enemySpeed: 0.5, enemyMovement: 'complex',  enemiesShoot: true,  resistantCount: 2, boss: true }
+  1: { enemyCount: 10, enemySpeed: 1, enemyMovement: 'straight', enemiesShoot: false, resistantCount: 0, boss: false },
+  2: { enemyCount: 15, enemySpeed: 0.5, enemyMovement: 'zigzag', enemiesShoot: true, resistantCount: 1, boss: false },
+  3: { enemyCount: 20, enemySpeed: 0.5, enemyMovement: 'complex', enemiesShoot: true, resistantCount: 2, boss: true }
 };
 
-//  PRELOAD 
 function preload() {
-  playerImage    = loadImage('AVION.png');
+  playerImage = loadImage('AVION.png');
   projectileImage = loadImage('balas.png');
-  EnemyImage      = loadImage('ENEMIGO.png');
-  galagaImage     = loadImage('galaga.png');
+  EnemyImage = loadImage('ENEMIGO.png');
+  galagaImage = loadImage('galaga.png');
+  introMusic = loadSound('Intro.mp3');
+  shootSound = loadSound('Disparo.mp3');
 }
 
-//  SETUP 
 function setup() {
   createCanvas(600, 600);
   textAlign(CENTER, CENTER);
   player = new Player();
   loadTopScores();
 
-  // Generar estrellas iniciales
   for (let i = 0; i < 100; i++) {
     stars.push({ x: random(width), y: random(height), speed: random(0.5, 1.5) });
   }
 }
 
-//  NIVELES 
 function startLevel() {
+  // Detener la música de intro al iniciar el juego
+  if (introMusic.isPlaying()) {
+    introMusic.stop();
+  }
+
   enemies = [];
   playerProjectiles = [];
   enemyProjectiles = [];
@@ -75,10 +83,8 @@ function startLevel() {
 }
 
 function draw() {
-  
   background(0);
 
-  //  Dibujar y actualizar estrellas
   for (let star of stars) {
     fill(255);
     noStroke();
@@ -91,6 +97,10 @@ function draw() {
   }
 
   if (gameState === 'start') {
+    if (!introMusicPlayed) {
+      introMusic.play();
+      introMusicPlayed = true;
+    }
     drawStartScreen();
   } else if (gameState === 'playing') {
     if (!isPaused) {
@@ -105,9 +115,8 @@ function draw() {
   }
 }
 
-//  PANTALLA DE INICIO 
 function drawStartScreen() {
-  background(0, 150); // leve sombreado sobre estrellas
+  background(0, 150);
   imageMode(CENTER);
   image(galagaImage, width / 2, height / 6, 250, 100);
 
@@ -125,6 +134,7 @@ function drawStartScreen() {
     text(`${i + 1}. ${topScores[i]}`, width / 2, height / 2 + 100 + i * 25);
   }
 }
+
 
 //  GAMEPLAY 
 function playGame() {
@@ -339,6 +349,7 @@ class Player {
 
   shoot() {
     playerProjectiles.push(new Projectile(this.x, this.y - 20, 5, 10, -7));
+    shootSound.play(); 
   }
 }
 
