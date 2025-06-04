@@ -1,4 +1,3 @@
-
 let player;
 let playerProjectiles = [];
 let enemyProjectiles = [];
@@ -20,9 +19,8 @@ let galagaImage;
 let introMusic;
 let introMusicPlayed = false;
 let shootSound;
-
-
-
+let enemyShootSound;
+let pauseSound;
 
 const LEVELS = {
   1: { enemyCount: 10, enemySpeed: 1, enemyMovement: 'straight', enemiesShoot: false, resistantCount: 0, boss: false },
@@ -37,6 +35,8 @@ function preload() {
   galagaImage = loadImage('galaga.png');
   introMusic = loadSound('Intro.mp3');
   shootSound = loadSound('Disparo.mp3');
+  enemyShootSound = loadSound('DisparoEnemigos.mp3');
+  pauseSound = loadSound('Pausar.mp3');
 }
 
 function setup() {
@@ -51,7 +51,6 @@ function setup() {
 }
 
 function startLevel() {
-  // Detener la música de intro al iniciar el juego
   if (introMusic.isPlaying()) {
     introMusic.stop();
   }
@@ -135,14 +134,10 @@ function drawStartScreen() {
   }
 }
 
-
-//  GAMEPLAY 
 function playGame() {
-  // Jugador
   player.update();
   player.show();
 
-  // Proyectiles del jugador
   for (let i = playerProjectiles.length - 1; i >= 0; i--) {
     let p = playerProjectiles[i];
     p.update();
@@ -150,25 +145,24 @@ function playGame() {
     if (p.offscreen()) playerProjectiles.splice(i, 1);
   }
 
-  // Enemigos
   for (let i = enemies.length - 1; i >= 0; i--) {
     let e = enemies[i];
     e.update();
     e.show();
 
-    // Disparo enemigo
     if (e.canShoot && random(1) < 0.005 * LEVELS[level].enemySpeed) {
       enemyProjectiles.push(new Projectile(e.x, e.y + 15, 5, 10, 5));
+      if (enemyShootSound && enemyShootSound.isLoaded()) {
+        enemyShootSound.play();
+      }
     }
 
-    // Colisión bala-jugador
     for (let j = playerProjectiles.length - 1; j >= 0; j--) {
       let p = playerProjectiles[j];
       if (e.hits(p)) {
         e.health--;
         playerProjectiles.splice(j, 1);
 
-        //  partículas cuando muere
         if (e.health <= 0) {
           score += e.isBoss ? 10 : e.maxHealth > 1 ? 3 : 1;
           enemies.splice(i, 1);
@@ -189,14 +183,12 @@ function playGame() {
       }
     }
 
-    // Colisión enemigo-jugador 
     if (e.y + e.size / 2 >= height || e.collidesWithPlayer(player)) {
       loseLife();
       enemies.splice(i, 1);
     }
   }
 
-  // Proyectiles enemigos
   for (let i = enemyProjectiles.length - 1; i >= 0; i--) {
     let p = enemyProjectiles[i];
     p.update();
@@ -211,7 +203,6 @@ function playGame() {
     }
   }
 
-  //  partículas de explosión
   for (let i = particles.length - 1; i >= 0; i--) {
     let prt = particles[i];
     fill(255, 150, 0, map(prt.life, 0, 30, 0, 255));
@@ -223,17 +214,15 @@ function playGame() {
     if (prt.life <= 0) particles.splice(i, 1);
   }
 
-  
   drawHUD();
 
-  // Condición de nivel completado / fin de juego
   if (enemies.length === 0) {
     if (level === 3) {
       gameState = 'gameover';
       saveScore();
     } else {
       gameState = 'transition';
-      transitionTimer = 120; // 2 s a 60 fps
+      transitionTimer = 120;
     }
   }
   if (lives <= 0) {
@@ -242,7 +231,6 @@ function playGame() {
   }
 }
 
-//  PANTALLA DE PAUSA 
 function drawPauseScreen() {
   fill(0, 0, 0, 180);
   rect(0, 0, width, height);
@@ -254,9 +242,8 @@ function drawPauseScreen() {
   text('Presiona P para continuar', width / 2, height / 2 + 20);
 }
 
-//  TRANSICIÓN ENTRE NIVELES 
 function drawTransition() {
-  let alpha = map(transitionTimer, 0, 120, 255, 0); // Fade-out
+  let alpha = map(transitionTimer, 0, 120, 255, 0);
   fill(255, alpha);
   textSize(28);
   textAlign(CENTER, CENTER);
@@ -268,7 +255,6 @@ function drawTransition() {
   }
 }
 
-// PANTALLA DE FIN
 function drawGameOver() {
   background(0, 180);
   fill(255);
@@ -293,7 +279,6 @@ function drawGameOver() {
   }
 }
 
-
 function drawHUD() {
   noStroke();
   fill(0, 0, 0, 150);
@@ -307,7 +292,7 @@ function drawHUD() {
   text(`📶 Nivel: ${level}`, 15, 40);
 }
 
-// INPUT 
+// === AQUÍ SE AGREGA EL SONIDO DE PAUSA ===
 function keyPressed() {
   if (keyCode === ENTER) {
     if (gameState === 'start') {
@@ -323,9 +308,16 @@ function keyPressed() {
   } else if (key === ' ' && gameState === 'playing') {
     player.shoot();
   } else if (key === 'p' || key === 'P') {
-    if (gameState === 'playing') isPaused = !isPaused;
+    if (gameState === 'playing') {
+      isPaused = !isPaused;
+      if (pauseSound && pauseSound.isLoaded()) {
+        pauseSound.play();
+      }
+    }
   }
 }
+
+
 
 //  CLASES 
 class Player {
