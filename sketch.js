@@ -22,6 +22,10 @@ let shootSound;
 let enemyShootSound;
 let pauseSound;
 
+// NUEVAS VARIABLES PARA EL NOMBRE
+let playerName = '';
+let enteringName = false;
+
 const LEVELS = {
   1: { enemyCount: 10, enemySpeed: 1, enemyMovement: 'straight', enemiesShoot: false, resistantCount: 0, boss: false },
   2: { enemyCount: 15, enemySpeed: 0.5, enemyMovement: 'zigzag', enemiesShoot: true, resistantCount: 1, boss: false },
@@ -111,6 +115,8 @@ function draw() {
     drawTransition();
   } else if (gameState === 'gameover') {
     drawGameOver();
+  } else if (gameState === 'entername') {
+    drawEnterNameScreen();
   }
 }
 
@@ -130,7 +136,8 @@ function drawStartScreen() {
   text(" Top 5 Puntuaciones:", width / 2, height / 2 + 70);
   fill(255);
   for (let i = 0; i < topScores.length; i++) {
-    text(`${i + 1}. ${topScores[i]}`, width / 2, height / 2 + 100 + i * 25);
+    let entry = topScores[i];
+    text(`${i + 1}. ${entry.name || '----'}: ${entry.score}`, width / 2, height / 2 + 100 + i * 25);
   }
 }
 
@@ -218,16 +225,18 @@ function playGame() {
 
   if (enemies.length === 0) {
     if (level === 3) {
-      gameState = 'gameover';
-      saveScore();
+      gameState = 'entername';
+      playerName = '';
+      enteringName = true;
     } else {
       gameState = 'transition';
       transitionTimer = 120;
     }
   }
   if (lives <= 0) {
-    gameState = 'gameover';
-    saveScore();
+    gameState = 'entername';
+    playerName = '';
+    enteringName = true;
   }
 }
 
@@ -255,17 +264,33 @@ function drawTransition() {
   }
 }
 
+function drawEnterNameScreen() {
+  background(0, 180);
+  fill(255);
+  rectMode(CENTER);
+  rect(width / 2, height / 2, 400, 200, 20);
+  fill(0);
+  textAlign(CENTER, CENTER);
+  textSize(24);
+  text('¡Juego Terminado!', width / 2, height / 2 - 60);
+  textSize(18);
+  text('Ingresa tu nombre (máx. 4 letras):', width / 2, height / 2 - 20);
+  textSize(32);
+  text(playerName + (frameCount % 40 < 20 ? '_' : ''), width / 2, height / 2 + 30);
+  textSize(16);
+  text('Presiona ENTER para confirmar', width / 2, height / 2 + 70);
+}
+
 function drawGameOver() {
   background(0, 180);
   fill(255);
   rectMode(CENTER);
   rect(width / 2, height / 2, 400, 300, 20);
-
   fill(0);
   textAlign(CENTER, CENTER);
   textSize(28);
   text(lives <= 0 ? '💀 Juego Terminado' : '🎉 ¡Ganaste!', width / 2, height / 2 - 90);
-  
+
   textSize(20);
   text(` Puntaje final: ${score}`, width / 2, height / 2 - 40);
   text('Presiona ENTER para reiniciar', width / 2, height / 2);
@@ -275,7 +300,8 @@ function drawGameOver() {
   text(' Top 5 Puntuaciones:', width / 2, height / 2 + 50);
   fill(0);
   for (let i = 0; i < topScores.length; i++) {
-    text(`${i + 1}. ${topScores[i]}`, width / 2, height / 2 + 80 + i * 25);
+    let entry = topScores[i];
+    text(`${i + 1}. ${entry.name || '----'}: ${entry.score}`, width / 2, height / 2 + 80 + i * 25);
   }
 }
 
@@ -292,8 +318,21 @@ function drawHUD() {
   text(`📶 Nivel: ${level}`, 15, 40);
 }
 
-// === AQUÍ SE AGREGA EL SONIDO DE PAUSA ===
+// === AQUÍ SE AGREGA EL SONIDO DE PAUSA Y LA ENTRADA DE NOMBRE ===
 function keyPressed() {
+  if (gameState === 'entername') {
+    if (keyCode === ENTER && playerName.length > 0) {
+      enteringName = false;
+      gameState = 'gameover';
+      saveScore(playerName);
+    } else if (keyCode === BACKSPACE) {
+      playerName = playerName.slice(0, -1);
+    } else if (/^[a-zA-Z]$/.test(key) && playerName.length < 4) {
+      playerName += key.toUpperCase();
+    }
+    return;
+  }
+
   if (keyCode === ENTER) {
     if (gameState === 'start') {
       level = 1; score = 0; lives = 3; startLevel();
@@ -316,8 +355,6 @@ function keyPressed() {
     }
   }
 }
-
-
 
 //  CLASES 
 class Player {
@@ -356,7 +393,6 @@ class Projectile {
     push();
     translate(this.x, this.y);
 
-    
     for (let i = 0; i < 3; i++) {
       fill(255, 255, 0, 100 - i * 30);
       ellipse(0, 0, this.w * 3 + i * 4, this.h * 3 + i * 4);
@@ -414,15 +450,15 @@ class Enemy {
   collidesWithPlayer(player) { return dist(this.x, this.y, player.x, player.y) < (this.size + player.size) / 2; }
 }
 
- 
 function loadTopScores() {
   let storedScores = getItem('topScores');
   topScores = Array.isArray(storedScores) ? storedScores : [];
 }
 
-function saveScore() {
-  topScores.push(score);
-  topScores.sort((a, b) => b - a);
+function saveScore(name) {
+  if (!name) name = '----';
+  topScores.push({ name, score });
+  topScores.sort((a, b) => b.score - a.score);
   if (topScores.length > maxTopScores) topScores.length = maxTopScores;
   storeItem('topScores', topScores);
 }
@@ -431,7 +467,8 @@ function saveScore() {
 function loseLife() {
   lives--;
   if (lives <= 0) {
-    gameOver = true;
-    saveScore();
+    gameState = 'entername';
+    playerName = '';
+    enteringName = true;
   }
 }
