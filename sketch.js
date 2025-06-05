@@ -282,28 +282,57 @@ function drawEnterNameScreen() {
 }
 
 function drawGameOver() {
-  background(0, 180);
-  fill(255);
-  rectMode(CENTER);
-  rect(width / 2, height / 2, 400, 300, 20);
-  fill(0);
-  textAlign(CENTER, CENTER);
-  textSize(28);
-  text(lives <= 0 ? '💀 Juego Terminado' : '🎉 ¡Ganaste!', width / 2, height / 2 - 90);
 
-  textSize(20);
-  text(` Puntaje final: ${score}`, width / 2, height / 2 - 40);
-  text('Presiona ENTER para reiniciar', width / 2, height / 2);
+  background(30, 30, 40, 240);
+
+  push();
+  noStroke();
+  fill(0, 150);
+  rectMode(CENTER);
+  rect(width / 2 + 6, height / 2 + 6, 460, 360, 30);
+  pop();
+
+
+  fill(250);
+  rectMode(CENTER);
+  rect(width / 2, height / 2, 460, 360, 30);
+
+  
+  noFill();
+  stroke(0, 200, 255);
+  strokeWeight(3);
+  rect(width / 2, height / 2, 460, 360, 30);
+
+  textAlign(CENTER, CENTER);
+  textSize(36);
+  textStyle(BOLD);
+  fill(lives <= 0 ? '#ff4c4c' : '#32cd32'); 
+  text(lives <= 0 ? ' GAME OVER' : ' ¡GANASTE!', width / 2, height / 2 - 110);
+
+  textSize(24);
+  textStyle(BOLD);
+  fill(20);
+  text(`Puntaje Final: ${score}`, width / 2, height / 2 - 60);
 
   textSize(18);
-  fill(80);
-  text(' Top 5 Puntuaciones:', width / 2, height / 2 + 50);
-  fill(0);
+  fill(60);
+  textStyle(NORMAL);
+  text('Presiona ENTER para volver a intentarlo', width / 2, height / 2 - 25);
+
+  fill(50);
+  textSize(20);
+  textStyle(BOLD);
+  text(' Top 5 Puntuaciones:', width / 2, height / 2 + 15);
+
+  fill(30);
+  textSize(16);
+  textStyle(NORMAL);
   for (let i = 0; i < topScores.length; i++) {
-    let entry = topScores[i];
-    text(`${i + 1}. ${entry.name || '----'}: ${entry.score}`, width / 2, height / 2 + 80 + i * 25);
+    const entry = topScores[i];
+    text(`${i + 1}. ${entry.name || '----'}: ${entry.score}`, width / 2, height / 2 + 45 + i * 24);
   }
 }
+
 
 function drawHUD() {
   noStroke();
@@ -313,12 +342,11 @@ function drawHUD() {
   fill(255);
   textAlign(LEFT, TOP);
   textSize(14);
-  text(`⭐ Puntaje: ${score}`, 15, 10);
-  text(`❤️ Vidas: ${lives}`, 15, 25);
-  text(`📶 Nivel: ${level}`, 15, 40);
+  text(` Puntaje: ${score}`, 15, 10);
+  text(` Vidas: ${lives}`, 15, 25);
+  text(` Nivel: ${level}`, 15, 40);
 }
 
-// === AQUÍ SE AGREGA EL SONIDO DE PAUSA Y LA ENTRADA DE NOMBRE ===
 function keyPressed() {
   if (gameState === 'entername') {
     if (keyCode === ENTER && playerName.length > 0) {
@@ -433,18 +461,24 @@ class Enemy {
   }
 
   show() {
-    imageMode(CENTER);
+  imageMode(CENTER);
+  image(EnemyImage, this.x, this.y, this.size, this.size);
 
-    // 👾 Parpadeo para el jefe
-    if (this.isBoss && frameCount % 30 < 15) {
-      tint(255, 100);
-    } else {
-      noTint();
-    }
+  if (this.maxHealth > 1) {
+    let barWidth = this.size;
+    let barHeight = 5;
+    let healthRatio = this.health / this.maxHealth;
+    let barX = this.x - barWidth / 2;
+    let barY = this.y - this.size / 2 - 10;
 
-    image(EnemyImage, this.x, this.y, this.size, this.size);
-    noTint();
+    
+    fill(100);
+    rect(barX, barY, barWidth, barHeight);
+
+    fill(0, 255, 0);
+    rect(barX, barY, barWidth * healthRatio, barHeight);
   }
+}
 
   hits(projectile)    { return dist(this.x, this.y, projectile.x, projectile.y) < this.size / 2; }
   collidesWithPlayer(player) { return dist(this.x, this.y, player.x, player.y) < (this.size + player.size) / 2; }
